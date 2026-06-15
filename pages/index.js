@@ -162,7 +162,7 @@ export default function Home() {
   }
 
   function handleBuy() {
-    if (result) window.open(result.shortLink, "_blank", "noopener");
+    if (result) window.open(result.shortLink, "_blank", "noopener,noreferrer");
   }
 
   const hasFbclid = !!fbclid;
