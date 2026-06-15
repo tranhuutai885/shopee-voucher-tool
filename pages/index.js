@@ -10,30 +10,46 @@ const STEPS = [
   {
     n: 2,
     bold: null,
-    text: 'Nhấn "Mua ngay" để mở Shopee trong tab mới và đặt hàng với mã giảm giá đã áp dụng.',
+    text: 'Nhấn "Mua ngay" để mở Shopee và đặt hàng với voucher mới được nhận.',
   },
-  {
-    n: 3,
-    bold: null,
-    text: "Vào ví Shopee → chọn voucher Facebook độc quyền → áp dụng khi thanh toán.",
-  },
+];
+
+const LOADING_STEPS = [
+  "Đang kết nối Shopee Affiliate...",
+  "Đang lấy voucher...",
+  "Đang gắn mã FB...",
 ];
 
 export default function Home() {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState(null); // { shortLink, fbclid }
+  const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [fbclid, setFbclid] = useState("");
   const inputRef = useRef(null);
+  const loadingTimer = useRef(null);
 
-  // Grab fbclid from URL on mount — this is what makes voucher claimable
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fb = params.get("fbclid");
     if (fb) setFbclid(fb);
   }, []);
+
+  // Cycle through loading messages
+  useEffect(() => {
+    if (loading) {
+      setLoadingStep(0);
+      let i = 0;
+      loadingTimer.current = setInterval(() => {
+        i = (i + 1) % LOADING_STEPS.length;
+        setLoadingStep(i);
+      }, 900);
+    } else {
+      clearInterval(loadingTimer.current);
+    }
+    return () => clearInterval(loadingTimer.current);
+  }, [loading]);
 
   async function handleConvert() {
     const trimmed = url.trim();
@@ -54,7 +70,6 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Lỗi không xác định");
 
-      // Append fbclid to shortLink so Shopee sees FB traffic
       let finalLink = data.shortLink;
       if (fbclid && !finalLink.includes("fbclid")) {
         finalLink += (finalLink.includes("?") ? "&" : "?") + "fbclid=" + fbclid;
@@ -75,13 +90,6 @@ export default function Home() {
     } catch {
       inputRef.current?.focus();
     }
-  }
-
-  async function handleCopy() {
-    if (!result) return;
-    await navigator.clipboard.writeText(result.shortLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   }
 
   function handleBuy() {
@@ -111,24 +119,26 @@ export default function Home() {
         {/* FB status pill */}
         <div className={`fb-pill ${hasFbclid ? "fb-pill--ok" : "fb-pill--warn"}`}>
           {hasFbclid ? (
-            <>✅ Đã nhận diện traffic Facebook — bạn đủ điều kiện nhận mã</>
+            <>✅ Link hợp lệ — voucher Facebook sẽ tự động vào ví khi mua</>
           ) : (
-            <>⚠️ Không tìm thấy fbclid — vào link này từ bài đăng Facebook để nhận được mã</>
+            <>⚠️ Vào link này từ bài đăng Facebook để nhận được mã giảm giá</>
           )}
+        </div>
+
+        {/* Social proof */}
+        <div className="social-proof">
+          🔥 Hôm nay đã có <strong>478+</strong> người dùng tool này
         </div>
 
         {/* Converter card */}
         <div className="card">
-          <label className="label" htmlFor="shopee-url">
-            Link sản phẩm Shopee
-          </label>
           <div className="input-row">
             <input
               id="shopee-url"
               ref={inputRef}
               className="input"
               type="url"
-              placeholder="Dán hoặc gõ link Shopee..."
+              placeholder="Dán link sản phẩm Shopee vào đây..."
               value={url}
               onChange={(e) => { setUrl(e.target.value); setError(""); setResult(null); }}
               onKeyDown={(e) => e.key === "Enter" && handleConvert()}
@@ -146,7 +156,10 @@ export default function Home() {
             disabled={loading}
           >
             {loading ? (
-              <span className="spinner-wrap"><span className="spinner" /> Đang xử lý...</span>
+              <span className="spinner-wrap">
+                <span className="spinner" />
+                {LOADING_STEPS[loadingStep]}
+              </span>
             ) : (
               "CHUYỂN ĐỔI NGAY"
             )}
@@ -156,17 +169,16 @@ export default function Home() {
         {/* Result card */}
         {result && (
           <div className="card result-card">
-            <p className="result-label">✅ Link đã sẵn sàng</p>
-            <div className="result-link-box">
-              <span className="result-link-text">{result.shortLink}</span>
-              <button className="copy-btn" onClick={handleCopy}>
-                {copied ? "✓" : "📋"}
-              </button>
+            <div className="result-product">
+              <div className="result-check">✓</div>
+              <div className="result-info">
+                <p className="result-done">Đã chuyển đổi xong</p>
+                <p className="result-voucher">🎉 Voucher FB đã sẵn sàng trong ví</p>
+              </div>
             </div>
             <button className="buy-btn" onClick={handleBuy}>
-              🛒 MUA NGAY — Nhận mã Facebook
+              MUA NGAY
             </button>
-            <p className="buy-note">Mã sẽ tự hiện trong ví Shopee sau khi mở link</p>
           </div>
         )}
 
@@ -174,7 +186,7 @@ export default function Home() {
         <div className="card steps-card">
           <div className="steps-header">
             <span>👉 <strong>Hướng dẫn áp mã</strong></span>
-            <span className="steps-sub">Chỉ 3 bước đơn giản</span>
+            <span className="steps-sub">Chỉ 2 bước đơn giản</span>
           </div>
           <div className="steps-list">
             {STEPS.map((s) => (
@@ -225,7 +237,7 @@ export default function Home() {
 
         /* FB pill */
         .fb-pill {
-          margin: 12px 16px;
+          margin: 12px 16px 0;
           padding: 10px 14px;
           border-radius: 8px;
           font-size: 13px;
@@ -234,25 +246,27 @@ export default function Home() {
         .fb-pill--ok { background: #E8F5E9; color: #1B5E20; border: 1px solid #A5D6A7; }
         .fb-pill--warn { background: #FFF8E1; color: #6D4C00; border: 1px solid #FFD54F; }
 
+        /* Social proof */
+        .social-proof {
+          margin: 8px 16px 0;
+          padding: 9px 14px;
+          background: #FFF3E0;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #BF360C;
+          border: 1px solid #FFCC80;
+        }
+
         /* Cards */
         .card {
           background: var(--white);
           border-radius: 16px;
-          margin: 0 16px 12px;
-          padding: 20px;
+          margin: 12px 16px 0;
+          padding: 16px;
           box-shadow: 0 1px 4px rgba(0,0,0,0.07);
         }
 
         /* Input */
-        .label {
-          display: block;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--muted);
-          margin-bottom: 8px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
         .input-row {
           display: flex;
           gap: 8px;
@@ -262,7 +276,7 @@ export default function Home() {
           flex: 1;
           border: 1.5px solid var(--border);
           border-radius: 10px;
-          padding: 12px 14px;
+          padding: 13px 14px;
           font-size: 15px;
           color: var(--text);
           outline: none;
@@ -301,11 +315,12 @@ export default function Home() {
           letter-spacing: 0.5px;
           cursor: pointer;
           transition: background 0.15s, transform 0.1s;
+          min-height: 54px;
         }
         .convert-btn:hover:not(:disabled) { background: var(--shopee-dark); }
         .convert-btn:active:not(:disabled) { transform: scale(0.98); }
-        .convert-btn--loading { opacity: 0.75; cursor: not-allowed; }
-        .spinner-wrap { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .convert-btn--loading { opacity: 0.85; cursor: not-allowed; }
+        .spinner-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; }
         .spinner {
           width: 16px; height: 16px;
           border: 2px solid rgba(255,255,255,0.4);
@@ -318,57 +333,63 @@ export default function Home() {
 
         /* Result */
         .result-card { border: 2px solid #A5D6A7; }
-        .result-label { font-size: 14px; font-weight: 700; color: var(--success); margin-bottom: 10px; }
-        .result-link-box {
+        .result-product {
           display: flex;
           align-items: center;
-          background: var(--bg);
-          border-radius: 8px;
-          padding: 10px 12px;
+          gap: 14px;
           margin-bottom: 14px;
-          gap: 8px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border);
         }
-        .result-link-text {
-          flex: 1;
+        .result-check {
+          width: 44px;
+          height: 44px;
+          background: var(--success);
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+        .result-done {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--success);
+          margin-bottom: 3px;
+        }
+        .result-voucher {
           font-size: 13px;
           color: var(--muted);
-          word-break: break-all;
-          line-height: 1.4;
-        }
-        .copy-btn {
-          background: none;
-          border: none;
-          font-size: 18px;
-          cursor: pointer;
-          flex-shrink: 0;
-          padding: 4px;
         }
         .buy-btn {
           width: 100%;
-          background: var(--success);
+          background: var(--shopee);
           color: white;
           border: none;
           border-radius: 12px;
-          padding: 15px;
-          font-size: 15px;
+          padding: 16px;
+          font-size: 16px;
           font-weight: 800;
           cursor: pointer;
           transition: background 0.15s;
-          letter-spacing: 0.3px;
+          letter-spacing: 0.5px;
         }
-        .buy-btn:hover { background: #219150; }
+        .buy-btn:hover { background: var(--shopee-dark); }
         .buy-btn:active { transform: scale(0.98); }
-        .buy-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
 
         /* Steps */
+        .steps-card { }
         .steps-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 14px;
+          align-items: center;
+          margin-bottom: 12px;
         }
         .steps-sub { font-size: 12px; color: var(--muted); }
-        .steps-list { display: flex; flex-direction: column; gap: 10px; }
+        .steps-list { display: flex; flex-direction: column; gap: 8px; }
         .step {
           display: flex;
           gap: 12px;
@@ -394,7 +415,7 @@ export default function Home() {
         .step-text { font-size: 14px; line-height: 1.55; color: var(--text); }
 
         .warning-box {
-          margin-top: 14px;
+          margin-top: 10px;
           background: #FFF8E1;
           border-radius: 10px;
           padding: 12px 14px;
@@ -408,7 +429,7 @@ export default function Home() {
           text-align: center;
           font-size: 12px;
           color: var(--muted);
-          padding-top: 8px;
+          padding-top: 16px;
         }
       `}</style>
     </>
