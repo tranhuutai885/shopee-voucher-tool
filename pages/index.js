@@ -26,22 +26,30 @@ const LOADING_STEPS = [
   "Đang gắn mã FB...",
 ];
 
-// Build affiliate link theo document Shopee (phần A)
-// Strip query params của URL gốc — chỉ lấy origin + path để encode sạch
-function buildAffiliateLink(shopeeUrl, affiliateId, subId, fbclid) {
-  let cleanUrl;
+// Strip query params, chỉ lấy origin + path
+function cleanShopeeUrl(shopeeUrl) {
   try {
     const u = new URL(shopeeUrl);
-    cleanUrl = u.origin + u.pathname;
+    return u.origin + u.pathname;
   } catch {
-    cleanUrl = shopeeUrl.split("?")[0];
+    return shopeeUrl.split("?")[0];
   }
+}
+
+// Build affiliate link theo document Shopee (phần A)
+function buildAffiliateLink(cleanUrl, affiliateId, subId, fbclid) {
   const encoded = encodeURIComponent(cleanUrl);
   let link = `https://s.shopee.vn/an_redir?origin_link=${encoded}&affiliate_id=${affiliateId}&sub_id=${subId}`;
-  if (fbclid) {
-    link += `&fbclid=${fbclid}`;
-  }
+  if (fbclid) link += `&fbclid=${fbclid}`;
   return link;
+}
+
+// Detect loại input
+function detectInputType(url) {
+  if (url.includes("s.shopee.vn/an_redir") || url.includes("shope.ee/an_redir")) return "an_redir";
+  if (/s\.shopee\.(vn|sg|ph|com|co\.id)\/[a-zA-Z0-9]+$/.test(url.split("?")[0])) return "shortlink";
+  if (url.includes("shopee.vn") || url.includes("shopee.")) return "original";
+  return "unknown";
 }
 
 export default function Home() {
@@ -74,7 +82,7 @@ export default function Home() {
     return () => clearInterval(loadingTimer.current);
   }, [loading]);
 
-  function handleConvert() {
+  async function handleConvert() {
     const trimmed = url.trim();
     if (!trimmed) {
       setError("Vui lòng dán link Shopee vào ô trên.");
@@ -89,9 +97,55 @@ export default function Home() {
     setResult(null);
     setLoading(true);
 
-    // Build link tức thì, delay nhẹ để hiện loading cho UX mượt
+    const type = detectInputType(trimmed);
+
+    if (type === "unknown") {
+      setError("Không phải link Shopee hợp lệ.");
+      setLoading(false);
+      return;
+    }
+
+    // Short link → cần unshorten qua server trước
+    if (type === "shortlink") {
+      try {
+        const res = await fetch("/api/unshorten", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Không thể resolve link");
+        const finalLink = buildAffiliateLink(data.resolvedUrl, AFFILIATE_ID, SUB_ID, fbclid);
+        setResult({ shortLink: finalLink });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // an_redir đã có aff_id → extract origin_link, rebuild
+    if (type === "an_redir") {
+      try {
+        const params = new URL(trimmed).searchParams;
+        const originLink = params.get("origin_link");
+        if (!originLink) throw new Error("Không tìm thấy origin_link");
+        const clean = cleanShopeeUrl(decodeURIComponent(originLink));
+        const finalLink = buildAffiliateLink(clean, AFFILIATE_ID, SUB_ID, fbclid);
+        setResult({ shortLink: finalLink });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Link gốc Shopee → build trực tiếp
     setTimeout(() => {
-      const finalLink = buildAffiliateLink(trimmed, AFFILIATE_ID, SUB_ID, fbclid);
+      const clean = cleanShopeeUrl(trimmed);
+      const finalLink = buildAffiliateLink(clean, AFFILIATE_ID, SUB_ID, fbclid);
       setResult({ shortLink: finalLink });
       setLoading(false);
     }, 1100);
