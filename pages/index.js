@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 
+// ====== CONFIG ======
+// affiliate_id đọc từ Environment Variable trên Vercel.
+// Đặt biến NEXT_PUBLIC_AFFILIATE_ID = "your_affiliate_id" trong Vercel.
+const AFFILIATE_ID = process.env.NEXT_PUBLIC_AFFILIATE_ID || "YOUR_AFFILIATE_ID";
+// ====================
+
 const STEPS = [
   {
     n: 1,
@@ -20,6 +26,16 @@ const LOADING_STEPS = [
   "Đang gắn mã FB...",
 ];
 
+// Build affiliate short-link theo document Shopee (phần A)
+function buildAffiliateLink(shopeeUrl, affiliateId, fbclid) {
+  const encoded = encodeURIComponent(shopeeUrl);
+  let link = `https://s.shopee.vn/an_redir?origin_link=${encoded}&affiliate_id=${affiliateId}`;
+  if (fbclid) {
+    link += `&fbclid=${fbclid}`;
+  }
+  return link;
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState(null);
@@ -36,7 +52,6 @@ export default function Home() {
     if (fb) setFbclid(fb);
   }, []);
 
-  // Cycle through loading messages
   useEffect(() => {
     if (loading) {
       setLoadingStep(0);
@@ -44,42 +59,34 @@ export default function Home() {
       loadingTimer.current = setInterval(() => {
         i = (i + 1) % LOADING_STEPS.length;
         setLoadingStep(i);
-      }, 900);
+      }, 700);
     } else {
       clearInterval(loadingTimer.current);
     }
     return () => clearInterval(loadingTimer.current);
   }, [loading]);
 
-  async function handleConvert() {
+  function handleConvert() {
     const trimmed = url.trim();
     if (!trimmed) {
       setError("Vui lòng dán link Shopee vào ô trên.");
       return;
     }
+    if (!trimmed.includes("shopee.vn") && !trimmed.includes("shope.ee")) {
+      setError("Không phải link Shopee hợp lệ.");
+      return;
+    }
+
     setError("");
     setResult(null);
     setLoading(true);
 
-    try {
-      const res = await fetch("/api/convert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Lỗi không xác định");
-
-      let finalLink = data.shortLink;
-      if (fbclid && !finalLink.includes("fbclid")) {
-        finalLink += (finalLink.includes("?") ? "&" : "?") + "fbclid=" + fbclid;
-      }
+    // Build link tức thì, delay nhẹ để hiện loading cho UX mượt
+    setTimeout(() => {
+      const finalLink = buildAffiliateLink(trimmed, AFFILIATE_ID, fbclid);
       setResult({ shortLink: finalLink });
-    } catch (err) {
-      setError(err.message);
-    } finally {
       setLoading(false);
-    }
+    }, 1100);
   }
 
   async function handlePaste() {
@@ -381,7 +388,6 @@ export default function Home() {
         .buy-btn:active { transform: scale(0.98); }
 
         /* Steps */
-        .steps-card { }
         .steps-header {
           display: flex;
           justify-content: space-between;
