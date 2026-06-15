@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 
 // ====== CONFIG ======
-// affiliate_id đọc từ Environment Variable trên Vercel.
-// Đặt biến NEXT_PUBLIC_AFFILIATE_ID = "your_affiliate_id" trong Vercel.
+// Đặt các biến này trong Vercel → Environment Variables
 const AFFILIATE_ID = process.env.NEXT_PUBLIC_AFFILIATE_ID || "YOUR_AFFILIATE_ID";
+const SUB_ID       = process.env.NEXT_PUBLIC_SUB_ID       || "1-2-3-4-5";
 // ====================
 
 const STEPS = [
@@ -26,10 +26,18 @@ const LOADING_STEPS = [
   "Đang gắn mã FB...",
 ];
 
-// Build affiliate short-link theo document Shopee (phần A)
-function buildAffiliateLink(shopeeUrl, affiliateId, fbclid) {
-  const encoded = encodeURIComponent(shopeeUrl);
-  let link = `https://s.shopee.vn/an_redir?origin_link=${encoded}&affiliate_id=${affiliateId}`;
+// Build affiliate link theo document Shopee (phần A)
+// Strip query params của URL gốc — chỉ lấy origin + path để encode sạch
+function buildAffiliateLink(shopeeUrl, affiliateId, subId, fbclid) {
+  let cleanUrl;
+  try {
+    const u = new URL(shopeeUrl);
+    cleanUrl = u.origin + u.pathname;
+  } catch {
+    cleanUrl = shopeeUrl.split("?")[0];
+  }
+  const encoded = encodeURIComponent(cleanUrl);
+  let link = `https://s.shopee.vn/an_redir?origin_link=${encoded}&affiliate_id=${affiliateId}&sub_id=${subId}`;
   if (fbclid) {
     link += `&fbclid=${fbclid}`;
   }
@@ -83,7 +91,7 @@ export default function Home() {
 
     // Build link tức thì, delay nhẹ để hiện loading cho UX mượt
     setTimeout(() => {
-      const finalLink = buildAffiliateLink(trimmed, AFFILIATE_ID, fbclid);
+      const finalLink = buildAffiliateLink(trimmed, AFFILIATE_ID, SUB_ID, fbclid);
       setResult({ shortLink: finalLink });
       setLoading(false);
     }, 1100);
