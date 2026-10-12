@@ -1,27 +1,17 @@
-# Shopee Voucher Tool
+# TOSCH — Meta Ads for Shopee
 
-Công cụ chuyển đổi link Shopee sang affiliate link để nhận voucher Facebook độc quyền.
+TOSCH runs paid affiliate campaigns on Facebook and Instagram to bring shoppers to products on Shopee. Our work includes campaigns for brands such as adidas, PUMA, New Balance, and Coolmate.
 
-## Deploy lên Vercel (miễn phí)
+## What we do
 
-### Bước 1 — Tạo repo GitHub
-1. Vào github.com → New repository → đặt tên `shopee-voucher-tool`
-2. Upload toàn bộ folder này lên (kéo thả hoặc dùng GitHub Desktop)
+- Plan and run paid traffic on Meta platforms.
+- Create and improve promotional content for Shopee products.
+- Use campaign performance insights to improve future creative and ads.
 
-### Bước 2 — Deploy lên Vercel
-1. Vào vercel.com → Sign up bằng GitHub account
-2. "Add New Project" → chọn repo `shopee-voucher-tool`
-3. **Quan trọng:** Trước khi deploy, vào "Environment Variables" và thêm:
-   - `SHOPEE_APP_ID` = APP_ID của bạn
-   - `SHOPEE_SECRET_KEY` = SECRET_KEY của bạn
-4. Bấm Deploy → xong, có URL live ngay
+## Platform Data
 
-### Bước 3 — Dùng tool
-1. Copy URL Vercel vừa tạo (vd: `https://shopee-voucher-tool.vercel.app`)
-2. **Đăng URL đó lên Facebook** (group, bài viết, comment)
-3. User click từ Facebook → fbclid tự gắn vào → claim được voucher ✅
+We use Platform Data from our own Facebook Page and Instagram account, including post, comment, and ad performance, to create and improve promotional content and ads for clients. Clients use our affiliate marketing service to get more traffic and sales on Shopee. They do not directly access or receive Platform Data from us.
 
-## Lưu ý quan trọng
-- User **phải** vào tool từ link Facebook mới claim được mã
-- Nếu gõ URL trực tiếp trên browser thì không có fbclid → không claim được
-- SECRET_KEY không bao giờ lộ ra browser — chỉ chạy trên server
+## About brand references
+
+Brand names are shown as examples of campaign experience. TOSCH is an independent affiliate marketing service and is not endorsed by, or affiliated with, the brands named here. Shopee and Meta are trademarks of their respective owners.
