@@ -39,7 +39,7 @@ export default function Home() {
               <article className="card"><div className="num">03 / ACTION</div><h3>Direct to Shopee</h3><p>Every campaign sends interested shoppers straight to the relevant Shopee listing.</p></article>
             </div>
           </section>
-          <section className="wrap"><div className="statement"><h2>More relevant clicks.<br />More opportunity to sell.</h2><p>We help Shopee brands turn paid social attention into product visits and affiliate sales, with performance insights guiding what we improve next.</p></div></section>
+          <section className="wrap"><div className="statement"><h2>More relevant clicks.<br />More opportunity to sell.</h2><p>We use insights from our own Facebook and Instagram activity to improve content and ads. Clients get the service and campaign results, not direct access to our Platform Data.</p></div></section>
         </main>
         <footer className="footer wrap"><div className="footbrand">tosch.</div><p>Independent affiliate marketing service. Brand names are shown as examples of campaign experience; no endorsement or affiliation is implied. Shopee and Meta are trademarks of their respective owners.</p></footer>
       </div>
